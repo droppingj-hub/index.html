@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bedriftsoversikt — Leaderboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f5f4f0;
+    --surface: #ffffff;
+    --surface2: #f0efe9;
+    --border: rgba(0,0,0,0.08);
+    --border2: rgba(0,0,0,0.14);
+    --text: #1a1917;
+    --text2: #6b6a66;
+    --text3: #9b9a96;
+    --gold: #b8860b;
+    --silver: #7a7975;
+    --bronze: #8b5e3c;
+    --green-bg: #e8f5ec; --green-text: #1a5e2a;
+    --teal-bg: #e0f4f0; --teal-text: #0d5246;
+    --amber-bg: #fdf0d5; --amber-text: #7a4f00;
+    --red-bg: #fdecea; --red-text: #7a1f1a;
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 2rem 1rem 4rem;
+  }
+
+  header {
+    max-width: 720px;
+    margin: 0 auto 2.5rem;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .logo {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    color: var(--text3);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  h1 {
+    font-size: 28px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+  }
+
+  .header-right {
+    text-align: right;
+  }
+
+  #last-updated {
+    font-size: 12px;
+    color: var(--text3);
+    font-family: 'DM Mono', monospace;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 7px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--border2);
+    background: var(--surface);
+    color: var(--text);
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+    text-decoration: none;
+  }
+  .btn:hover { background: var(--surface2); }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: var(--text); color: #fff; border-color: var(--text); }
+  .btn-primary:hover { background: #333; }
+
+  main { max-width: 720px; margin: 0 auto; }
+
+  /* Setup card */
+  .setup-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 2rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .setup-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+  }
+
+  .field { margin-bottom: 1rem; }
+  .field label {
+    display: block;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    margin-bottom: 6px;
+  }
+  .field input {
+    width: 100%;
+    padding: 9px 12px;
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    background: var(--bg);
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .field input:focus { border-color: #888; }
+  .field .hint {
+    font-size: 12px;
+    color: var(--text3);
+    margin-top: 5px;
+    line-height: 1.5;
+  }
+  .field .hint a { color: var(--text2); }
+
+  .btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 1.5rem; }
+
+  .msg {
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 13px;
+    margin-bottom: 1rem;
+    display: none;
+  }
+  .msg.error { background: var(--red-bg); color: var(--red-text); display: block; }
+  .msg.success { background: var(--green-bg); color: var(--green-text); display: block; }
+
+  /* Metrics */
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 10px;
+    margin-bottom: 2rem;
+  }
+  .metric {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+  }
+  .metric-label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+  .metric-value { font-size: 28px; font-weight: 600; letter-spacing: -0.02em; }
+
+  /* Rows */
+  .lb-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--border);
+    animation: fadeIn 0.3s ease forwards;
+    opacity: 0;
+  }
+  @keyframes fadeIn { to { opacity: 1; } }
+
+  .rank {
+    font-family: 'DM Mono', monospace;
+    font-size: 16px;
+    font-weight: 500;
+    width: 26px;
+    text-align: right;
+    padding-top: 10px;
+    flex-shrink: 0;
+  }
+
+  .avatar {
+    width: 42px; height: 42px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 600; font-size: 15px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .lb-body { flex: 1; min-width: 0; }
+
+  .lb-name-row {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 6px;
+  }
+  .lb-name { font-weight: 600; font-size: 15px; }
+  .lb-count { font-size: 12px; color: var(--text3); font-family: 'DM Mono', monospace; }
+
+  .bar-track {
+    background: var(--surface2);
+    border-radius: 4px;
+    height: 6px;
+    overflow: hidden;
+    margin-bottom: 10px;
+  }
+  .bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.6s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  .pills { display: flex; flex-wrap: wrap; gap: 6px; }
+  .pill {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 9px;
+    border-radius: 999px;
+  }
+
+  /* Auto refresh indicator */
+  .pulse {
+    display: inline-block;
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: #2e9e5b;
+    animation: pulse 2s infinite;
+    margin-right: 4px;
+  }
+  @keyframes pulse {
+    0%,100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .top-controls {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 1.5rem; flex-wrap: wrap; gap: 10px;
+  }
+
+  footer {
+    max-width: 720px;
+    margin: 3rem auto 0;
+    font-size: 12px;
+    color: var(--text3);
+    text-align: center;
+    font-family: 'DM Mono', monospace;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="logo">Bedriftsoversikt</div>
+    <h1>Leaderboard</h1>
+  </div>
+  <div class="header-right">
+    <div id="last-updated">—</div>
+    <div style="margin-top:8px;display:flex;gap:8px;justify-content:flex-end;" id="header-btns" style="display:none;">
+      <button class="btn" onclick="showSetup()">Innstillinger</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div id="msg" class="msg"></div>
+
+  <div id="setup-section">
+    <div class="setup-card">
+      <p class="setup-title">Koble til Google Sheets</p>
+
+      <div class="field">
+        <label>Google Sheets ID</label>
+        <input type="text" id="sheet-id" value="18DL8ax-BkbfecBBwMX0XCMJcaSWQfXGb70CjoIVB2aw" />
+        <p class="hint">Finn ID-en i URL-en: ...spreadsheets/d/<strong>ID</strong>/edit</p>
+      </div>
+
+      <div class="field">
+        <label>Arknavn</label>
+        <input type="text" id="sheet-name" value="Ark 1" />
+      </div>
+
+      <div class="field">
+        <label>Google API-nøkkel</label>
+        <input type="password" id="api-key" placeholder="AIza..." />
+        <p class="hint">
+          1. Gå til <a href="https://console.cloud.google.com/apis/credentials" target="_blank">Google Cloud Console</a><br>
+          2. Opprett prosjekt → aktiver <strong>Google Sheets API</strong><br>
+          3. Credentials → Create API key → lim inn her<br>
+          4. Del arket som "Alle med lenken kan se"
+        </p>
+      </div>
+
+      <div class="field">
+        <label>Kolonne: ansvarlig person</label>
+        <input type="text" id="col-owner" value="Intern ansvarlig" />
+      </div>
+
+      <div class="field">
+        <label>Kolonne: status</label>
+        <input type="text" id="col-status" value="Status" />
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="loadSheet()">Hent data</button>
+        <button class="btn" onclick="toggleAuto()" id="auto-btn">Start auto-oppdatering</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="lb-section" style="display:none;">
+    <div class="top-controls">
+      <div id="auto-status" style="font-size:13px;color:var(--text2);"></div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn" onclick="loadSheet()">Oppdater nå</button>
+        <button class="btn" onclick="toggleAuto()" id="auto-btn2">Start auto-oppdatering</button>
+        <button class="btn" onclick="showSetup()">Innstillinger</button>
+      </div>
+    </div>
+    <div class="metrics" id="metrics"></div>
+    <div id="rows"></div>
+  </div>
+</main>
+
+<footer>oppdateres fra Google Sheets · ikke kontaktede teller ikke</footer>
+
+<script>
+const ACTIVE = ["Avtalt Møte","Bekrefter Samarbeid","Venter på svar","Ikke interessert"];
+const ORDER  = ["Bekrefter Samarbeid","Avtalt Møte","Venter på svar","Ikke interessert"];
+const SCOL   = {
+  "Bekrefter Samarbeid": { bg:"#e0f4f0", text:"#0d5246" },
+  "Avtalt Møte":         { bg:"#e8f5ec", text:"#1a5e2a" },
+  "Venter på svar":      { bg:"#fdf0d5", text:"#7a4f00" },
+  "Ikke interessert":    { bg:"#fdecea", text:"#7a1f1a" },
+};
+const AVCOL = [
+  { bg:"#e8e6ff", text:"#3730a3" },
+  { bg:"#d1fae5", text:"#065f46" },
+  { bg:"#fef3c7", text:"#92400e" },
+  { bg:"#ffe4e6", text:"#9f1239" },
+  { bg:"#dbeafe", text:"#1e40af" },
+  { bg:"#f3e8ff", text:"#6b21a8" },
+];
+const MEDALS = ["#b8860b","#7a7975","#8b5e3c"];
+
+let autoTimer = null;
+
+function showMsg(txt, type) {
+  const el = document.getElementById("msg");
+  el.textContent = txt;
+  el.className = "msg " + type;
+}
+
+function clearMsg() {
+  const el = document.getElementById("msg");
+  el.className = "msg";
+}
+
+function showSetup() {
+  document.getElementById("setup-section").style.display = "block";
+  document.getElementById("lb-section").style.display = "none";
+}
+
+function saveSettings() {
+  localStorage.setItem("lb_sheet_id", document.getElementById("sheet-id").value);
+  localStorage.setItem("lb_sheet_name", document.getElementById("sheet-name").value);
+  localStorage.setItem("lb_api_key", document.getElementById("api-key").value);
+  localStorage.setItem("lb_col_owner", document.getElementById("col-owner").value);
+  localStorage.setItem("lb_col_status", document.getElementById("col-status").value);
+}
+
+function loadSettings() {
+  const get = (k, fallback) => localStorage.getItem(k) || fallback;
+  document.getElementById("sheet-id").value   = get("lb_sheet_id",   "18DL8ax-BkbfecBBwMX0XCMJcaSWQfXGb70CjoIVB2aw");
+  document.getElementById("sheet-name").value = get("lb_sheet_name", "Ark 1");
+  document.getElementById("api-key").value    = get("lb_api_key",    "");
+  document.getElementById("col-owner").value  = get("lb_col_owner",  "Intern ansvarlig");
+  document.getElementById("col-status").value = get("lb_col_status", "Status");
+}
+
+async function loadSheet() {
+  const id      = document.getElementById("sheet-id").value.trim();
+  const name    = document.getElementById("sheet-name").value.trim() || "Ark 1";
+  const key     = document.getElementById("api-key").value.trim();
+  const colOwn  = document.getElementById("col-owner").value.trim();
+  const colStat = document.getElementById("col-status").value.trim();
+
+  if (!id || !key) { showMsg("Fyll inn Sheet ID og API-nøkkel.", "error"); return; }
+  saveSettings();
+
+  const range = encodeURIComponent(`${name}!A1:Z300`);
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${id}/values/${range}?key=${key}`;
+
+  showMsg("Henter data fra Google Sheets…", "success");
+
+  try {
+    const res = await fetch(url);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      showMsg("Feil: " + (err.error?.message || "Ukjent feil (status " + res.status + ")"), "error");
+      return;
+    }
+    const data = await res.json();
+    const rows = data.values || [];
+    if (rows.length < 2) { showMsg("Ingen data funnet i arket.", "error"); return; }
+
+    const headers = rows[0];
+    const iOwner  = headers.indexOf(colOwn);
+    const iStatus = headers.indexOf(colStat);
+
+    if (iOwner === -1 || iStatus === -1) {
+      showMsg(`Fant ikke kolonner "${colOwn}" og/eller "${colStat}". Sjekk arknavn og kolonnenavn i Innstillinger.`, "error");
+      return;
+    }
+
+    const people = {};
+    for (let i = 1; i < rows.length; i++) {
+      const row    = rows[i];
+      const owner  = (row[iOwner]  || "").trim();
+      const status = (row[iStatus] || "").trim();
+      const company = row[0] || "Ukjent";
+
+      if (!owner || owner === "X" || !ACTIVE.includes(status)) continue;
+
+      owner.split(/[,\/]/).map(n => n.trim()).filter(n => n && n !== "X").forEach(name => {
+        if (!people[name]) people[name] = {};
+        people[name][status] = (people[name][status] || []).concat(company);
+      });
+    }
+
+    render(people);
+    clearMsg();
+    document.getElementById("setup-section").style.display = "none";
+    document.getElementById("lb-section").style.display = "block";
+    document.getElementById("last-updated").textContent =
+      "Sist oppdatert " + new Date().toLocaleTimeString("nb-NO", { hour:"2-digit", minute:"2-digit" });
+
+  } catch (e) {
+    showMsg("Nettverksfeil. Sjekk at arket er offentlig delt og at API-nøkkelen er riktig.", "error");
+  }
+}
+
+function render(people) {
+  const ranked = Object.entries(people).map(([name, statuses], i) => {
+    const total = ACTIVE.reduce((s, st) => s + (statuses[st]?.length || 0), 0);
+    return { name, statuses, total, color: AVCOL[i % AVCOL.length] };
+  }).sort((a, b) => b.total - a.total);
+
+  const max       = Math.max(...ranked.map(r => r.total), 1);
+  const grand     = ranked.reduce((s, r) => s + r.total, 0);
+  const meetings  = ranked.reduce((s, r) => s + (r.statuses["Avtalt Møte"]?.length || 0), 0);
+  const confirmed = ranked.reduce((s, r) => s + (r.statuses["Bekrefter Samarbeid"]?.length || 0), 0);
+
+  document.getElementById("metrics").innerHTML = [
+    { label: "Totalt kontaktet", val: grand,     color: "" },
+    { label: "Avtalt møte",      val: meetings,  color: "#1a5e2a" },
+    { label: "Bekrefter samarbeid", val: confirmed, color: "#0d5246" },
+    { label: "Aktive personer",  val: ranked.length, color: "" },
+  ].map(m => `
+    <div class="metric">
+      <div class="metric-label">${m.label}</div>
+      <div class="metric-value" style="${m.color ? 'color:'+m.color : ''}">${m.val}</div>
+    </div>
+  `).join('');
+
+  document.getElementById("rows").innerHTML = ranked.map((p, i) => {
+    const pct  = Math.round(p.total / max * 100);
+    const pills = ORDER.filter(st => p.statuses[st]?.length).map(st => {
+      const c = SCOL[st];
+      return `<span class="pill" style="background:${c.bg};color:${c.text};" title="${p.statuses[st].join(', ')}">${p.statuses[st].length} ${st.toLowerCase()}</span>`;
+    }).join('');
+
+    return `
+      <div class="lb-row" style="animation-delay:${i*60}ms;">
+        <div class="rank" style="color:${i < 3 ? MEDALS[i] : 'var(--text3)'}">${i+1}</div>
+        <div class="avatar" style="background:${p.color.bg};color:${p.color.text};">${p.name[0].toUpperCase()}</div>
+        <div class="lb-body">
+          <div class="lb-name-row">
+            <span class="lb-name">${p.name}</span>
+            <span class="lb-count">${p.total} kontaktet</span>
+          </div>
+          <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${p.color.text};"></div></div>
+          <div class="pills">${pills}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function toggleAuto() {
+  const btn1 = document.getElementById("auto-btn");
+  const btn2 = document.getElementById("auto-btn2");
+  const status = document.getElementById("auto-status");
+  if (autoTimer) {
+    clearInterval(autoTimer);
+    autoTimer = null;
+    btn1.textContent = btn2.textContent = "Start auto-oppdatering";
+    status.innerHTML = "";
+  } else {
+    loadSheet();
+    autoTimer = setInterval(loadSheet, 60000);
+    btn1.textContent = btn2.textContent = "Stopp auto-oppdatering";
+    status.innerHTML = '<span class="pulse"></span> Oppdateres automatisk hvert minutt';
+  }
+}
+
+loadSettings();
+</script>
+</body>
+</html>
