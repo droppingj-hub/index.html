@@ -335,8 +335,16 @@
 <footer>oppdateres fra Google Sheets · ikke kontaktede teller ikke</footer>
 
 <script>
-const ACTIVE = ["Avtalt Møte","Bekrefter Samarbeid","Venter på svar","Ikke interessert"];
+// status groups handled by normalizeStatus()
+const ACTIVE = ["Bekrefter Samarbeid","Avtalt Møte","Venter på svar","Ikke interessert"];
 const ORDER  = ["Bekrefter Samarbeid","Avtalt Møte","Venter på svar","Ikke interessert"];
+function normalizeStatus(raw) {
+  if (raw.startsWith("Bekrefter")) return "Bekrefter Samarbeid";
+  if (raw.startsWith("Avtalt")) return "Avtalt Møte";
+  if (raw.startsWith("Venter")) return "Venter på svar";
+  if (raw.toLowerCase().startsWith("ikke i")) return "Ikke interessert";
+  return null;
+}
 const SCOL   = {
   "Bekrefter Samarbeid": { bg:"#e0f4f0", text:"#0d5246" },
   "Avtalt Møte":         { bg:"#e8f5ec", text:"#1a5e2a" },
@@ -427,10 +435,11 @@ async function loadSheet() {
     for (let i = 1; i < rows.length; i++) {
       const row    = rows[i];
       const owner  = (row[iOwner]  || "").trim();
-      const status = (row[iStatus] || "").trim();
+      const rawStatus = (row[iStatus] || "").trim();
+      const status = normalizeStatus(rawStatus);
       const company = row[0] || "Ukjent";
 
-      if (!owner || owner === "X" || !ACTIVE.includes(status)) continue;
+      if (!owner || owner === "X" || !status) continue;
 
       owner.split(/[,\/]/).map(n => n.trim()).filter(n => n && n !== "X").forEach(name => {
         if (!people[name]) people[name] = {};
